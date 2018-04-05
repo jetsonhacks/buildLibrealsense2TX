@@ -1,0 +1,19 @@
+commit 01c67149f7a8b8172e33676178d8cb8dbe1f3523
+Author: Dorodnicov, Sergey <sergey.dorodnicov@intel.com>
+Date:   Tue Apr 3 04:07:29 2018 -0700
+
+    Fixing ARM build (by @jallum)
+
+diff --git a/src/image.cpp b/src/image.cpp
+index 264cd27..5f6ba74 100644
+--- a/src/image.cpp
++++ b/src/image.cpp
+@@ -11,7 +11,7 @@
+ #include <immintrin.h>
+ #endif
+ 
+-#ifdef ANDROID
++#if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__))
+ 
+ bool has_avx() { return false; }
+ 

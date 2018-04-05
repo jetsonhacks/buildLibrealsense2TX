@@ -1,0 +1,40 @@
+diff --git a/src/linux/backend-hid.cpp b/src/linux/backend-hid.cpp
+index 591a72a..163cf17 100644
+--- a/src/linux/backend-hid.cpp
++++ b/src/linux/backend-hid.cpp
+@@ -1086,9 +1086,19 @@ namespace librealsense
+             for (auto& elem : common_sensors)
+             {
+                 hid_device_info hid_dev_info{};
++                std::string device_path_str(elem.c_str());
+                 if(!get_hid_device_info(elem.c_str(), hid_dev_info))
+                 {
+-                    LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
++                    // On the Jetson TX, ina3221x is the power monitor (I2C bus)
++                    // This code is checking the IIA device directory, but tries to compare as USB HID device
++                    // The ina3221x is not a HID device
++                    // Check here to avoid spamming the console
++                    device_path_str+="/";
++                    std::string dev_name;
++                    std::ifstream(device_path_str + "name") >> dev_name;
++                    if (dev_name != std::string("ina3221x")) {
++                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << elem);
++                    }
+                     continue;
+                 }
+                 action(hid_dev_info);
+diff --git a/src/linux/backend-v4l2.cpp b/src/linux/backend-v4l2.cpp
+index d67d656..de14ada 100644
+--- a/src/linux/backend-v4l2.cpp
++++ b/src/linux/backend-v4l2.cpp
+@@ -453,7 +453,9 @@ namespace librealsense
+                     }
+                     if(!good)
+                     {
+-                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
++                        // On the Jetson TX, the camera module is CSI & I2C and does not report as
++                        // this code expects. Comment out for now.
++                        // LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
+                         continue;
+                     }
+ 
