@@ -10,14 +10,29 @@ To install the librealsense library:
 
 $ ./installLibrealsense.sh
 
+The install script does the following:
 
-Which will install needed dependencies, and then build the librealsense repository. The install script will also set udev rules so that the camera may be used in user space.
+<ul>
+<li>Install dependencies</li>
+<li>Applies Jetson specific patches</li>
+<li>Sets up udev rules so the camera may be used in user space</li>
+<li>Builds librealsense, tools and demos</li>
+<li>Installs libraries and executables</li>
+</ul>
 
-In order for librealsense to work properly, the kernel image must be rebuilt and patches applied to the uvc module and some other support modules. The installLibrealsense.sh will appear to mostly work but will be missing features such as frame metadata support.
 
-To Do:
+In order for librealsense to work properly, the kernel image must be rebuilt and patches applied to the uvc module and some other support modules. Running installLibrealsense.sh alone will appear to mostly work but will be missing features such as frame metadata support ( https://github.com/IntelRealSense/librealsense/blob/master/doc/frame_metadata.md ).
 
-Kernel patch script
-Kernel building instructions   
+<h2>To Do:</h2>
 
+<ul>
+<li>Kernel patch script</li>
+<li>Kernel building instructions</li>
+</ul>
+
+
+<b>Notes:</b>
+<ul>
+<li>Tested on Intel RealSense D435</li>
+</ul>
 
