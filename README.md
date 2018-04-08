@@ -48,9 +48,13 @@ $ ./buildPatchedKernelTX2.sh
 
 By default, the kernel sources will be erased from the disk after the kernel has been compiled and installed. You will need ~3GB of disk space to build the kernel in this manner. Please note that you should do this on a freshly flashed system. In the case when something goes wrong, it may make the system fail and become unresponsive; the only way to recover may be to use JetPack to reflash.
 
+The script has an option to keep the kernel sources and build information:
+
+$ ./buildPatchedKernelTX2.sh --nocleanup
+
+which may prove useful for debugging purposes.
+
 The script is more provided as a guide on how to build a system that supports librealsense2 than as a practical method to generate a new system.
-
-
 
 
 <h2>To Do:</h2>
