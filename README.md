@@ -1,7 +1,7 @@
 # buildLibrealsense2TX2
 Build librealsense 2.0 library on the NVIDIA Jetson TX Development kit. Jetson TX1 and Jetson TX2. Intel RealSense D400 series cameras.
 
-Work in Progress 4/4/2018
+Work in Progress 4/8/2018
 
 This is for version L4T 28.2 (JetPack 3.2)
 librealsense v2.10.2
@@ -21,40 +21,60 @@ The install script does the following:
 </ul>
 
 
-In order for librealsense to work properly, the kernel image must be rebuilt and patches applied to the uvc module and some other support modules. Running installLibrealsense.sh alone will appear to mostly work but will be missing features such as frame metadata support ( https://github.com/IntelRealSense/librealsense/blob/master/doc/frame_metadata.md ).
+In order for librealsense to work properly, the kernel image must be rebuilt and patches applied to the UVC module and some other support modules. Running installLibrealsense.sh alone will appear to make the camera mostly work but will be missing features such as frame metadata support ( https://github.com/IntelRealSense/librealsense/blob/master/doc/frame_metadata.md ).
 
 <h2>Rebuilding the kernel</h2>
 The Jetsons have the v4l2 module built into the kernel image. The module should not be built as an external module, due to needed support for the carrier board camera. Because of this, a separate kernel Image should be generated, as well as any needed modules (such as the patched UVC module).
 
-In order to support Intel RealSense cameras with built in accelerometers and gyroscopes, modules need to be enabled. These modules are in the Industrail I/O device tree. The Jetson already has IIO support enabled in the kernel image to support the INA3321x power monitors. To support these other HID IIO devices, IIO_BUFFER must be enabled; it must be built into the kernel Image as well.
+In order to support Intel RealSense cameras with built in accelerometers and gyroscopes, modules need to be enabled. These modules are in the Industrial I/O (<strong> IIO</strong> ) device tree. The Jetson already has IIO support enabled in the kernel image to support the INA3321x power monitors. To support these other HID IIO devices, IIO_BUFFER must be enabled; it must be built into the kernel Image as well.
 
-A configuration file of a stock image with the added librealsense2 modules enabled is located in the 'config' folder. The local version is "-tegra"
+A configuration file of a stock image with the added librealsense2 modules enabled is located in the 'config' folder. The local version is "-tegra".
 
-Most developers will want to apply the needed patches, configure the .config to match their desired environment, and build their kernel image and modules. The script applyKernelPatches.sh will patch the kernel modules and Image to support the librealsense2 cameras. Typically you will need to do a diff with the previously mentioned config file to create a patch to correctly configure the your .config file. You can apply the kernel patches:
+Most developers will want to apply the needed patches, configure the kernel .config file to match their desired environment, and then build their kernel Image and modules. The script applyKernelPatches.sh will patch the kernel modules and Image to support the librealsense2 cameras. Typically you will perform a diff with the previously mentioned config file to create a patch to correctly modify your .config file. You can apply the kernel patches:
 
+     ```sh
 $ ./applyKernelPatches.sh
+     ```
 
 The script assumes that the source is in the usual place for the Jetson, i.e. /usr/src/kernel/kernel-4.4, though you may want to change it to match your needs. Make sure to also update the .config file to include the librealsense2 module configuration information.
 
 <h3>A nasty little alternative</h3>
 
-If you live a little more dangerously, and you are not concerned with building/maintaining your own kernel, there is a script which downloads the kernel source, patches it, builds a new kernel and installs it. To be clear, this is not good development methodology, but it gets the job done. You will need to install the librealsense2 library beforehand as described above.
+If you live a little more dangerously, and you are not concerned with building/maintaining your own kernel, there is a script which downloads the kernel source, patches it, builds a new kernel and installs it. To be clear, this is not good development methodology. You will need to install the librealsense2 library beforehand as described above.
 
 <em><strong>Note: </strong>If you have a modified kernel Image or module configuration, you do *NOT* want to run this script! The script will overwrite the current kernel image.</em>
 
 On the Jetson TX2:
 
+     ```sh
 $ ./buildPatchedKernelTX2.sh
+     ```
 
 By default, the kernel sources will be erased from the disk after the kernel has been compiled and installed. You will need ~3GB of disk space to build the kernel in this manner. Please note that you should do this on a freshly flashed system. In the case when something goes wrong, it may make the system fail and become unresponsive; the only way to recover may be to use JetPack to reflash.
 
 The script has an option to keep the kernel sources and build information:
 
+     ```sh
 $ ./buildPatchedKernelTX2.sh --nocleanup
+     ```
 
 which may prove useful for debugging purposes.
 
 The script is more provided as a guide on how to build a system that supports librealsense2 than as a practical method to generate a new system.
+
+The local version of the buildPatchedKernel is the same as the stock version, '-tegra'. 
+
+<h3>Tracking Module</h3>
+Some RealSense cameras have a tracking module. Here's some more info on that:
+
+TM1-specifics:
+    * Tracking Module requires *hid_sensor_custom* kernel module to operate properly.
+      Due to TM1's power-up sequence constrains, this driver is required to be loaded during boot for the HW to be properly initialized.
+
+      In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
+      ```sh
+      $ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
+      ```
 
 
 <h2>To Do:</h2>
