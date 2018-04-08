@@ -30,11 +30,17 @@ In order to support Intel RealSense cameras with built in accelerometers and gyr
 
 A configuration file of a stock image with the added librealsense2 modules enabled is located in the 'config' folder. The local version is "-tegra"
 
-Most developers will want to build their own kernel, apply the needed patches, configure the .config to match their desired environment. The script applyKernelPatches.sh will patch the kernel modules and Image to support the librealsense2 cameras. Typically you will want to do a diff with the previously mentioned config file to create a patch to correctly configure the needed modules. You can apply the kernel patches:
+Most developers will want to apply the needed patches, configure the .config to match their desired environment, and build their kernel image and modules. The script applyKernelPatches.sh will patch the kernel modules and Image to support the librealsense2 cameras. Typically you will need to do a diff with the previously mentioned config file to create a patch to correctly configure the your .config file. You can apply the kernel patches:
 
 $ ./applyKernelPatches.sh
 
+The script assumes that the source is in the usual place for the Jetson, i.e. /usr/src/kernel/kernel-4.4, though you may want to change it to match your needs. Make sure to also update the .config file to include the librealsense2 module configuration information.
+
+<h3>A nasty little alternative</h3>
+
 If you live a little more dangerously, and you are not concerned with building/maintaining your own kernel, there is a script which downloads the kernel source, patches it, builds a new kernel and installs it. To be clear, this is not good development methodology, but it gets the job done. You will need to install the librealsense2 library beforehand as described above.
+
+<em><strong>Note: </strong>If you have a modified kernel Image or module configuration, you do *NOT* want to run this script! The script will overwrite the current kernel image.</em>
 
 On the Jetson TX2:
 
