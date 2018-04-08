@@ -1,11 +1,16 @@
 #!/bin/bash
-# Builds the Intel Realsense library librealsense on a Jetson TX2 Development Kit
+# Builds the Intel Realsense library librealsense on a Jetson TX Development Kit
 # Copyright (c) 2016-18 Jetsonhacks 
 # MIT License
 red=`tput setaf 1`
 green=`tput setaf 2`
 reset=`tput sgr0`
-# e.g. echo "${red}red text ${green}green text${reset}"
+# e.g. echo "${red}The red tail hawk ${green}loves the green grass${reset}"
+
+echo ""
+echo "Please make sure that no RealSense cameras are currently attached"
+echo ""
+read -n 1 -s -r -p "Press and key to continue"
 
 sudo ./scripts/installDependencies.sh
 

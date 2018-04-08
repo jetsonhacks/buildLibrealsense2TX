@@ -23,16 +23,41 @@ The install script does the following:
 
 In order for librealsense to work properly, the kernel image must be rebuilt and patches applied to the uvc module and some other support modules. Running installLibrealsense.sh alone will appear to mostly work but will be missing features such as frame metadata support ( https://github.com/IntelRealSense/librealsense/blob/master/doc/frame_metadata.md ).
 
+<h2>Rebuilding the kernel</h2>
+The Jetsons have the v4l2 module built into the kernel image. The module should not be built as an external module, due to needed support for the carrier board camera. Because of this, a separate kernel Image should be generated, as well as any needed modules (such as the patched UVC module).
+
+In order to support Intel RealSense cameras with built in accelerometers and gyroscopes, modules need to be enabled. These modules are in the Industrail I/O device tree. The Jetson already has IIO support enabled in the kernel image to support the INA3321x power monitors. To support these other HID IIO devices, IIO_BUFFER must be enabled; it must be built into the kernel Image as well.
+
+A configuration file of a stock image with the added librealsense2 modules enabled is located in the 'config' folder. The local version is "-tegra"
+
+Most developers will want to build their own kernel, apply the needed patches, configure the .config to match their desired environment. The script applyKernelPatches.sh will patch the kernel modules and Image to support the librealsense2 cameras. Typically you will want to do a diff with the previously mentioned config file to create a patch to correctly configure the needed modules. You can apply the kernel patches:
+
+$ ./applyKernelPatches.sh
+
+If you live a little more dangerously, and you are not concerned with building/maintaining your own kernel, there is a script which downloads the kernel source, patches it, builds a new kernel and installs it. To be clear, this is not good development methodology, but it gets the job done. You will need to install the librealsense2 library beforehand as described above.
+
+On the Jetson TX2:
+
+$ ./buildPatchedKernelTX2.sh
+
+By default, the kernel sources will be erased from the disk after the kernel has been compiled and installed. You will need ~3GB of disk space to build the kernel in this manner. Please note that you should do this on a freshly flashed system. In the case when something goes wrong, it may make the system fail and become unresponsive; the only way to recover may be to use JetPack to reflash.
+
+The script is more provided as a guide on how to build a system that supports librealsense2 than as a practical method to generate a new system.
+
+
+
+
 <h2>To Do:</h2>
 
 <ul>
-<li>Kernel patch script</li>
-<li>Kernel building instructions</li>
+<li>Kernel patch script for Jetson TX1</li>
 </ul>
 
 
 <b>Notes:</b>
 <ul>
 <li>Tested on Intel RealSense D435</li>
+<li>L4T 28.2 (JetPack 3.2)
+<li>NVIDIA Jetson TX2</li>
 </ul>
 
