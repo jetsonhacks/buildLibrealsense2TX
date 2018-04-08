@@ -32,9 +32,7 @@ A configuration file of a stock image with the added librealsense2 modules enabl
 
 Most developers will want to apply the needed patches, configure the kernel .config file to match their desired environment, and then build their kernel Image and modules. The script applyKernelPatches.sh will patch the kernel modules and Image to support the librealsense2 cameras. Typically you will perform a diff with the previously mentioned config file to create a patch to correctly modify your .config file. You can apply the kernel patches:
 
-     ```sh
 $ ./applyKernelPatches.sh
-     ```
 
 The script assumes that the source is in the usual place for the Jetson, i.e. /usr/src/kernel/kernel-4.4, though you may want to change it to match your needs. Make sure to also update the .config file to include the librealsense2 module configuration information.
 
@@ -46,17 +44,14 @@ If you live a little more dangerously, and you are not concerned with building/m
 
 On the Jetson TX2:
 
-     ```sh
 $ ./buildPatchedKernelTX2.sh
-     ```
+
 
 By default, the kernel sources will be erased from the disk after the kernel has been compiled and installed. You will need ~3GB of disk space to build the kernel in this manner. Please note that you should do this on a freshly flashed system. In the case when something goes wrong, it may make the system fail and become unresponsive; the only way to recover may be to use JetPack to reflash.
 
 The script has an option to keep the kernel sources and build information:
 
-     ```sh
 $ ./buildPatchedKernelTX2.sh --nocleanup
-     ```
 
 which may prove useful for debugging purposes.
 
@@ -68,13 +63,12 @@ The local version of the buildPatchedKernel is the same as the stock version, '-
 Some RealSense cameras have a tracking module. Here's some more info on that:
 
 TM1-specifics:
-    * Tracking Module requires *hid_sensor_custom* kernel module to operate properly.
-      Due to TM1's power-up sequence constrains, this driver is required to be loaded during boot for the HW to be properly initialized.
+Tracking Module requires *hid_sensor_custom* kernel module to operate properly.
+Due to TM1's power-up sequence constrains, this driver is required to be loaded during boot for the HW to be properly initialized.
 
-      In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
-      ```sh
-      $ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
-      ```
+In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/modules` file, eg:
+
+$ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
 
 
 <h2>To Do:</h2>
