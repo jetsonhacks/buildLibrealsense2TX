@@ -10,8 +10,8 @@ reset=`tput sgr0`
 echo ""
 echo "Please make sure that no RealSense cameras are currently attached"
 echo ""
-read -n 1 -s -r -p "Press and key to continue"
-
+read -n 1 -s -r -p "Press any key to continue"
+echo ""
 sudo ./scripts/installDependencies.sh
 
 INSTALL_DIR=$PWD
