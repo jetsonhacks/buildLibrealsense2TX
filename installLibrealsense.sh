@@ -16,24 +16,31 @@ sudo ./scripts/installDependencies.sh
 
 INSTALL_DIR=$PWD
 cd ${HOME}
+echo "${green}Cloning librealsense${reset}"
 git clone https://github.com/IntelRealSense/librealsense.git
 cd librealsense
-# Checkout version v2.10.2 of librealsense, last tested version
-git checkout v2.10.2
+# Checkout version v2.10.4 of librealsense, last tested version
+git checkout v2.10.4
 
-# librealsense v2.10.2 adds code for AVX (an Intel instruction set).
-# Unfortunately this causes a hiccup on ARM processors
-# A later commit in v2.10.3 (release currently in progress) includes a workaround patch
-# We grab the commit and use it as a patch in v2.10.2
-echo "${green}Applying AVX patch${reset}"
-git show 01c67149f7a8b8172e33676178d8cb8dbe1f3523 > $INSTALL_DIR/patches/avx.patch
-patch -p1 -i $INSTALL_DIR/patches/avx.patch
 echo "${green}Applying Device Bus Patch${reset}"
 # Some assumptions are made about how devices attach in the library.
 # The Jetson has some devices onboard (the ina3221x power monitor, camera module) 
 # that do not report on the USB bus as the library expects.
 # This patch is a work around to avoid spamming the console
 patch -p1 -i $INSTALL_DIR/patches/internalbus.patch
+
+echo "${green}Applying Model-Views Patch${reset}"
+# The render loop of the post processing does not yield; add a sleep
+patch -p1 -i $INSTALL_DIR/patches/model-views.patch
+
+echo "${green}Applying AVC Switch Patch${reset}"
+# The CMakeLists.txt references the -mavx2 switch, which is not available
+# on the Jetson. This patch simply comments it out
+patch -p1 -i $INSTALL_DIR/patches/avxSwitch.patch
+
+echo "${green}Applying CUDA Enhancement Patch${reset}"
+# Add CUDA code to translate uyvy to RGB/BGR/RGBA/BGRA
+patch -p1 -i $INSTALL_DIR/patches/cudaImage.patch
 
 echo "${green}Applying udev rules${reset}"
 # Copy over the udev rules so that camera can be run from user space
@@ -44,6 +51,7 @@ sudo udevadm control --reload-rules && udevadm trigger
 mkdir build && cd build
 # Build examples, including graphical ones
 echo "${green}Building make system${reset}"
+# Build with CUDA (default), the CUDA flag is USE_CUDA, ie -DUSE_CUDA=true
 cmake ../ -DBUILD_EXAMPLES=true
 # The library will be installed in /usr/local/lib, header files in /usr/local/include
 # The demos, tutorials and tests will located in /usr/local/bin.

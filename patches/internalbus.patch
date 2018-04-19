@@ -24,17 +24,19 @@ index 591a72a..163cf17 100644
                  }
                  action(hid_dev_info);
 diff --git a/src/linux/backend-v4l2.cpp b/src/linux/backend-v4l2.cpp
-index d67d656..de14ada 100644
+index 128a98c..fb4cb35 100644
 --- a/src/linux/backend-v4l2.cpp
 +++ b/src/linux/backend-v4l2.cpp
-@@ -453,7 +453,9 @@ namespace librealsense
+@@ -483,8 +483,10 @@ namespace librealsense
                      }
-                     if(!good)
+                     if(!valid_path)
                      {
 -                        LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
-+                        // On the Jetson TX, the camera module is CSI & I2C and does not report as
-+                        // this code expects. Comment out for now.
-+                        // LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
-                         continue;
+-                        continue;
++			 // On the Jetson TX, the camera module is CSI & I2C and does not report as
++                         // this code expects. Comment out for now.
++                         // LOG_WARNING("Failed to read busnum/devnum. Device Path: " << path);
++                         continue;
                      }
  
+                     std::string modalias; 

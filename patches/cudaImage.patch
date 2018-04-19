@@ -1,0 +1,494 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 05a5547..0bc7c85 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -51,6 +51,24 @@ elseif(COMPILER_SUPPORTS_CXX0X)
+     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
+ endif()
+ 
++option(USE_CUDA "Use CUDA for GPU acceleration" ON)
++if (USE_CUDA)
++    add_definitions(-DUSE_CUDA)
++endif()
++
++
++if (USE_CUDA)
++    find_package(CUDA REQUIRED)
++    # Setup CUDA
++    set(
++        CUDA_NVCC_FLAGS
++        ${CUDA_NVCC_FLAGS};
++        -Xcompiler -fPIC;
++        -O3 -gencode arch=compute_53,code=sm_53
++        -gencode arch=compute_62,code=sm_62
++    )
++endif()
++
+ # This parameter is meant for disabling graphical examples when building for
+ # save-to-disk targets.
+ option(BUILD_GRAPHICAL_EXAMPLES "Build graphical examples and tools." ON)
+@@ -296,6 +314,27 @@ set(REALSENSE_HPP
+     src/media/ros/ros_file_format.h
+ )
+ 
++if (USE_CUDA)
++    # Add the CUDA files
++    set(REALSENSE_CUDA_CUH
++    src/cuda/cuda-conversion.cuh
++    )
++
++    set(REALSENSE_CUDA
++    src/cuda/cuda-conversion.cu
++    )
++
++    # This is for dynamic linking ...
++    cuda_compile(CUDA_OBJS ${REALSENSE_CUDA})
++    set(REALSENSE_CPP ${REALSENSE_CPP} ${CUDA_OBJS})
++    set(REALSENSE_HPP ${REALSENSE_HPP} ${REALSENSE_CUDA_CUH})
++    # End Dynamic Linking
++
++    include_directories(
++      ${CUDA_INCLUDE_DIRS}
++    )
++endif()
++
+ if(BUILD_EASYLOGGINGPP)
+     list(APPEND REALSENSE_CPP third-party/easyloggingpp/src/easylogging++.cc)
+     list(APPEND REALSENSE_HPP third-party/easyloggingpp/src/easylogging++.h)
+@@ -735,6 +774,11 @@ else()
+     target_link_libraries(realsense2 PRIVATE ${LIBUSB1_LIBRARIES})
+ endif()
+ 
++if (USE_CUDA)
++    # CUDA Libraries
++    link_directories($CUDA_LIBRARY_DIRS)
++    target_link_libraries(realsense2 PRIVATE ${CUDA_LIBRARIES})
++endif()
+ 
+ add_definitions(-DELPP_THREAD_SAFE)
+ add_definitions(-DELPP_NO_DEFAULT_LOG_FILE)
+diff --git a/src/cuda/cuda-conversion.cu b/src/cuda/cuda-conversion.cu
+index e69de29..1e1d66f 100644
+--- a/src/cuda/cuda-conversion.cu
++++ b/src/cuda/cuda-conversion.cu
+@@ -0,0 +1,289 @@
++#ifdef USE_CUDA
++
++
++#include <stdint.h>
++#include <assert.h>
++
++#define RS_CUDA_THREADS_PER_BLOCK 16
++
++// YUYV
++// Each four bytes is two pixels. Each four bytes is two Y's, a Cb and a Cr. 
++// Each Y goes to one of the pixels, and the Cb and Cr belong to both pixels.
++// Also known in Windows as YUY2
++
++__global__ void kernel_unpack_yuy2_rgb8_cuda(const uint8_t * src, uint8_t *dst, int superPixCount)
++{
++    int i = blockDim.x * blockIdx.x + threadIdx.x;
++
++    if (i >= superPixCount)
++        return;
++
++    int idx = i * 4;
++
++    uint8_t y0 = src[idx];
++    uint8_t u0 = src[idx + 1];
++    uint8_t y1 = src[idx + 2];
++    uint8_t v0 = src[idx + 3];
++
++    int16_t luma = y0 - 16;
++    int16_t chromaCb = u0 - 128;
++    int16_t chromaCr = v0 - 128;
++
++    int32_t t;
++#define clamp(x)  ((t=(x)) > 255 ? 255 : t < 0 ? 0 : t)
++
++    int odx = i * 6;
++
++    dst[odx]     = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++    dst[odx + 1] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 2] = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++
++    luma = y1 - 16;
++
++    dst[odx + 3] = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++    dst[odx + 4] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 5] = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++
++#undef clamp
++}
++
++__global__ void kernel_unpack_yuy2_rgb8a_cuda(const uint8_t * src, uint8_t *dst, int superPixCount)
++{
++    int i = blockDim.x * blockIdx.x + threadIdx.x;
++
++    if (i >= superPixCount)
++        return;
++
++    int idx = i * 4;
++
++    uint8_t y0 = src[idx];
++    uint8_t u0 = src[idx + 1];
++    uint8_t y1 = src[idx + 2];
++    uint8_t v0 = src[idx + 3];
++
++    int16_t luma = y0 - 16;
++    int16_t chromaCb = u0 - 128;
++    int16_t chromaCr = v0 - 128;
++
++    int32_t t;
++#define clamp(x)  ((t=(x)) > 255 ? 255 : t < 0 ? 0 : t)
++
++    int odx = i * 6;
++
++    dst[odx]     = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++    dst[odx + 1] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 2] = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++    dst[odx + 3] = 255 ;
++
++    luma = y1 - 16;
++
++    dst[odx + 4] = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++    dst[odx + 5] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 6] = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++    dst[odx + 7] = 255 ;
++
++#undef clamp
++}
++
++
++__global__ void kernel_unpack_yuy2_bgr8_cuda(const uint8_t * src, uint8_t *dst, int superPixCount)
++{
++    int i = blockDim.x * blockIdx.x + threadIdx.x;
++
++    if (i >= superPixCount)
++        return;
++
++    int idx = i * 4;
++
++    uint8_t y0 = src[idx];
++    uint8_t u0 = src[idx + 1];
++    uint8_t y1 = src[idx + 2];
++    uint8_t v0 = src[idx + 3];
++
++    int16_t luma = y0 - 16;
++    int16_t chromaCb = u0 - 128;
++    int16_t chromaCr = v0 - 128;
++
++    int32_t t;
++#define clamp(x)  ((t=(x)) > 255 ? 255 : t < 0 ? 0 : t)
++
++    int odx = i * 8;
++
++    dst[odx]     = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++    dst[odx + 1] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 2] = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++
++    luma = y1 - 16;
++
++    dst[odx + 3] = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++    dst[odx + 4] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 5] = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++
++#undef clamp
++}
++
++__global__ void kernel_unpack_yuy2_bgr8a_cuda(const uint8_t * src, uint8_t *dst, int superPixCount)
++{
++    int i = blockDim.x * blockIdx.x + threadIdx.x;
++
++    if (i >= superPixCount)
++        return;
++
++    int idx = i * 4;
++
++    uint8_t y0 = src[idx];
++    uint8_t u0 = src[idx + 1];
++    uint8_t y1 = src[idx + 2];
++    uint8_t v0 = src[idx + 3];
++
++    int16_t luma = y0 - 16;
++    int16_t chromaCb = u0 - 128;
++    int16_t chromaCr = v0 - 128;
++
++    int32_t t;
++#define clamp(x)  ((t=(x)) > 255 ? 255 : t < 0 ? 0 : t)
++
++    int odx = i * 8;
++
++    dst[odx]     = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++    dst[odx + 1] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 2] = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++    dst[odx + 3] = 255 ;
++
++    luma = y1 - 16;
++
++    dst[odx + 4] = clamp((298 * luma + 516 * chromaCb + 128) >> 8);
++    dst[odx + 5] = clamp((298 * luma - 100 * chromaCb - 409 * chromaCr + 128) >> 8);
++    dst[odx + 6] = clamp((298 * luma + 409 * chromaCr + 128) >> 8);
++    dst[odx + 7] = 255 ;
++
++#undef clamp
++}
++
++
++void unpack_yuy2_rgb8_cuda(const uint8_t* src, uint8_t* dst, int n)
++{
++    // How many super pixels do we have?
++    int superPix = n / 2;
++    uint8_t *devSrc = nullptr;
++    uint8_t *devDst = nullptr;
++
++    cudaError_t result = cudaMalloc(&devSrc, superPix * sizeof(uint8_t) * 4);
++    assert(result == cudaSuccess);
++
++    result = cudaMalloc(&devDst, n * sizeof(uint8_t) * 3);
++    assert(result == cudaSuccess);
++
++    result = cudaMemcpy(devSrc, src, superPix * sizeof(uint8_t) * 4, cudaMemcpyHostToDevice);
++    assert(result == cudaSuccess);
++
++    int numBlocks = superPix / RS_CUDA_THREADS_PER_BLOCK;
++
++    // Call the kernel
++    kernel_unpack_yuy2_rgb8_cuda<<<numBlocks, RS_CUDA_THREADS_PER_BLOCK >>>(devSrc, devDst, superPix);
++    result = cudaGetLastError();
++    assert(result == cudaSuccess);
++
++    // Copy back
++    result = cudaMemcpy(dst, devDst, n * sizeof(uint8_t) * 3, cudaMemcpyDeviceToHost);
++    assert(result == cudaSuccess);
++
++    cudaFree(devSrc);
++    cudaFree(devDst);
++}
++
++void unpack_yuy2_rgb8a_cuda(const uint8_t* src, uint8_t* dst, int n)
++{
++    // How many super pixels do we have?
++    int superPix = n / 2;
++    uint8_t *devSrc = nullptr;
++    uint8_t *devDst = nullptr;
++
++    cudaError_t result = cudaMalloc(&devSrc, superPix * sizeof(uint8_t) * 4);
++    assert(result == cudaSuccess);
++
++    result = cudaMalloc(&devDst, n * sizeof(uint8_t) * 4);
++    assert(result == cudaSuccess);
++
++    result = cudaMemcpy(devSrc, src, superPix * sizeof(uint8_t) * 4, cudaMemcpyHostToDevice);
++    assert(result == cudaSuccess);
++
++    int numBlocks = superPix / RS_CUDA_THREADS_PER_BLOCK;
++
++    // Call the kernel
++    kernel_unpack_yuy2_rgb8a_cuda<<<numBlocks, RS_CUDA_THREADS_PER_BLOCK >>>(devSrc, devDst, superPix);
++    result = cudaGetLastError();
++    assert(result == cudaSuccess);
++
++    // Copy back
++    result = cudaMemcpy(dst, devDst, n * sizeof(uint8_t) * 4, cudaMemcpyDeviceToHost);
++    assert(result == cudaSuccess);
++
++    cudaFree(devSrc);
++    cudaFree(devDst);
++}
++
++void unpack_yuy2_bgr8_cuda(const uint8_t* src, uint8_t* dst, int n)
++{
++    // How many super pixels do we have?
++    int superPix = n / 2;
++    uint8_t *devSrc = nullptr;
++    uint8_t *devDst = nullptr;
++
++    cudaError_t result = cudaMalloc(&devSrc, superPix * sizeof(uint8_t) * 4);
++    assert(result == cudaSuccess);
++
++    result = cudaMalloc(&devDst, n * sizeof(uint8_t) * 3);
++    assert(result == cudaSuccess);
++
++    result = cudaMemcpy(devSrc, src, superPix * sizeof(uint8_t) * 4, cudaMemcpyHostToDevice);
++    assert(result == cudaSuccess);
++
++    int numBlocks = superPix / RS_CUDA_THREADS_PER_BLOCK;
++
++    // Call the kernel
++    kernel_unpack_yuy2_bgr8_cuda<<<numBlocks, RS_CUDA_THREADS_PER_BLOCK >>>(devSrc, devDst, superPix);
++    result = cudaGetLastError();
++    assert(result == cudaSuccess);
++
++    // Copy back
++    result = cudaMemcpy(dst, devDst, n * sizeof(uint8_t) * 3, cudaMemcpyDeviceToHost);
++    assert(result == cudaSuccess);
++
++    cudaFree(devSrc);
++    cudaFree(devDst);
++}
++
++
++void unpack_yuy2_bgr8a_cuda(const uint8_t* src, uint8_t* dst, int n)
++{
++    // How many super pixels do we have?
++    int superPix = n / 2;
++    uint8_t *devSrc = nullptr;
++    uint8_t *devDst = nullptr;
++
++    cudaError_t result = cudaMalloc(&devSrc, superPix * sizeof(uint8_t) * 4);
++    assert(result == cudaSuccess);
++
++    result = cudaMalloc(&devDst, n * sizeof(uint8_t) * 4);
++    assert(result == cudaSuccess);
++
++    result = cudaMemcpy(devSrc, src, superPix * sizeof(uint8_t) * 4, cudaMemcpyHostToDevice);
++    assert(result == cudaSuccess);
++
++    int numBlocks = superPix / RS_CUDA_THREADS_PER_BLOCK;
++
++    // Call the kernel
++    kernel_unpack_yuy2_bgr8a_cuda<<<numBlocks, RS_CUDA_THREADS_PER_BLOCK >>>(devSrc, devDst, superPix);
++    result = cudaGetLastError();
++    assert(result == cudaSuccess);
++
++    // Copy back
++    result = cudaMemcpy(dst, devDst, n * sizeof(uint8_t) * 4, cudaMemcpyDeviceToHost);
++    assert(result == cudaSuccess);
++
++    cudaFree(devSrc);
++    cudaFree(devDst);
++}
++
++#endif
+diff --git a/src/cuda/cuda-conversion.cuh b/src/cuda/cuda-conversion.cuh
+index e69de29..bff82ef 100644
+--- a/src/cuda/cuda-conversion.cuh
++++ b/src/cuda/cuda-conversion.cuh
+@@ -0,0 +1,28 @@
++#pragma once
++#ifndef LIBREALSENSE2_CUDA_CONVERSION_H
++#define LIBREALSENSE2_CUDA_CONVERSION_H
++
++#ifdef USE_CUDA
++
++// Types
++#include <stdint.h>
++#include "../include/librealsense2/rs.h"
++#include "../assert.h"
++#include "../types.h"
++
++// CUDA headers
++#include <cuda_runtime.h>
++
++#ifdef _MSC_VER 
++// Add library dependencies if using VS
++#pragma comment(lib, "cudart_static")
++#endif
++
++void unpack_yuy2_rgb8_cuda(const uint8_t* src, uint8_t* dst, int n);
++void unpack_yuy2_rgb8a_cuda(const uint8_t* src, uint8_t* dst, int n);
++void unpack_yuy2_bgr8_cuda(const uint8_t* src, uint8_t* dst, int n);
++void unpack_yuy2_bgr8a_cuda(const uint8_t* src, uint8_t* dst, int n);
++
++#endif // USE_CUDA
++
++#endif // LIBREALSENSE2_CUDA_CONVERSION_H
+diff --git a/src/image.cpp b/src/image.cpp
+index 858186b..2fe2cb8 100644
+--- a/src/image.cpp
++++ b/src/image.cpp
+@@ -10,6 +10,78 @@
+ #include <tmmintrin.h> // For SSE3 intrinsic used in unpack_yuy2_sse
+ #endif
+ 
++#ifdef USE_CUDA
++
++#include "cuda/cuda-conversion.cuh"
++
++namespace librealsense
++{
++
++template<rs2_format FORMAT> void unpack_yuy2_cuda(byte * const d[], const byte * s, int n)
++{
++    const uint8_t *src = reinterpret_cast<const uint8_t *>(s);
++    uint8_t *dst = reinterpret_cast<uint8_t *>(d[0]);
++
++    switch (FORMAT)
++    {
++    // Y8 and Y16 just rearrange bytes; this is probably faster than sending it off to the CUDA lands
++    case RS2_FORMAT_Y8:
++    case RS2_FORMAT_Y16:
++    {
++        auto src = reinterpret_cast<const uint8_t *>(s);
++        auto dst = reinterpret_cast<uint8_t *>(d[0]);
++        for (; n; n -= 16, src += 32)
++        {
++            if (FORMAT == RS2_FORMAT_Y8)
++            {
++                uint8_t out[16] = {
++                    src[0], src[2], src[4], src[6],
++                    src[8], src[10], src[12], src[14],
++                    src[16], src[18], src[20], src[22],
++                    src[24], src[26], src[28], src[30],
++                };
++                librealsense::copy(dst, out, sizeof out);
++                dst += sizeof out;
++                continue;
++            }
++
++            if (FORMAT == RS2_FORMAT_Y16)
++            {
++                // Y16 is little-endian.  We output Y << 8.
++                uint8_t out[32] = {
++                    0, src[0], 0, src[2], 0, src[4], 0, src[6],
++                    0, src[8], 0, src[10], 0, src[12], 0, src[14],
++                    0, src[16], 0, src[18], 0, src[20], 0, src[22],
++                    0, src[24], 0, src[26], 0, src[28], 0, src[30],
++                };
++                librealsense::copy(dst, out, sizeof out);
++                dst += sizeof out;
++                continue;
++            }
++        }
++    }
++        break ;
++
++    case RS2_FORMAT_RGB8:
++        unpack_yuy2_rgb8_cuda(src, dst, n);
++        break;
++    case RS2_FORMAT_BGR8:
++        unpack_yuy2_bgr8_cuda(src, dst, n);
++        break;
++    case RS2_FORMAT_RGBA8:
++        unpack_yuy2_rgb8a_cuda(src, dst, n);
++        break;
++    case RS2_FORMAT_BGRA8:
++        unpack_yuy2_bgr8a_cuda(src, dst, n);
++        break;
++    default:
++        assert(false);
++    }
++}
++}
++
++#endif
++
+ #if defined (ANDROID) || (defined (__linux__) && !defined (__x86_64__))
+ 
+ bool has_avx() { return false; }
+@@ -301,9 +373,12 @@ namespace librealsense
+     template<rs2_format FORMAT> void unpack_yuy2(byte * const d[], const byte * s, int width, int height)
+     {
+         auto n = width * height;
+-        assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration.
++        assert(n % 16 == 0); // All currently supported color resolutions are multiples of 16 pixels. Could easily extend support to other resolutions by copying final n<16 pixels into a zero-padded buffer and recursively calling self for final iteration
++        #ifdef USE_CUDA
++
++        unpack_yuy2_cuda<FORMAT>(d, s, n);
+ 
+-        #ifdef __SSSE3__
++        #elif __SSSE3__
+         static bool do_avx = has_avx();
+ 
+         if (do_avx)
