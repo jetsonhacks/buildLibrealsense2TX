@@ -38,3 +38,5 @@ bash scripts/config --file .config \
         --module HID_SENSOR_ACCEL_3D \
 	--module HID_SENSOR_GYRO_3D
 
+yes "" | make olddefconfig
+
