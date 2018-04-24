@@ -61,6 +61,7 @@ The install script does the following:
 
 <h3>CUDA</h3>
 There is added CUDA support for converting yuy2 images to RGB/BGR/RGBA/BGRA. The Cmake flag is USE_CUDA, e.g. -DUSE_CUDA=true
+
 Special thanks to Mehran Maghoumi (@Maghoumi) for the CUDA code which forms the basis for the conversion
 
 <h3>Tracking Module</h3>
@@ -82,7 +83,6 @@ April, 2018
 <li>Added CUDA support for yuy2->RGB/BGR/RGBA/BGRA</li>
 <li>L4T 28.2 (JetPack 3.2)</li>
 <li>librealsense 2.10.2</li></ul>
-* Special thanks for Mehran Maghoumi for the CUDA code 
 
 April, 2018
 <strong>v0.5 (Development)</strong>
