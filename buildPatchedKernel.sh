@@ -117,7 +117,6 @@ elif [ $JETSON_BOARD == "TX1" ] ; then
     tput sgr0
     echo "There are no build scripts for this Jetson board"
     exit 1
-  fi 
 fi
 
 # Get the kernel sources; does not open up editor on .config file
