@@ -100,6 +100,7 @@ if [ ! $VERSION_TAG  ] ; then
 fi
 
 KERNEL_BUILD_DIR=""
+cd $INSTALL_DIR
 echo "Ready to patch and build kernel "$JETSON_BOARD
 if [ $JETSON_BOARD == "TX2" ] ; then 
   git clone https://github.com/jetsonhacks/buildJetsonTX2Kernel.git
