@@ -8,7 +8,7 @@ reset=`tput sgr0`
 # e.g. echo "${red}The red tail hawk ${green}loves the green grass${reset}"
 
 LIBREALSENSE_DIRECTORY=${HOME}/librealsense
-LIBREALSENSE_VERSION=v2.10.5
+LIBREALSENSE_VERSION=v2.10.4
 
 echo ""
 echo "Please make sure that no RealSense cameras are currently attached"
@@ -22,9 +22,6 @@ if [ ! -d "$LIBREALSENSE_DIRECTORY" ] ; then
   cd ${HOME}
   echo "${green}Cloning librealsense${reset}"
   git clone https://github.com/IntelRealSense/librealsense.git
-  cd librealsense
-  # Checkout version the last tested version of librealsense
-  git checkout $LIBREALSENSE_VERSION
 fi
 
 # Is the version of librealsense current enough?
@@ -38,17 +35,21 @@ if [ ! $VERSION_TAG  ] ; then
   echo ""
   echo "The installed version of librealsense is not current enough for these scripts."
   echo "This script needs librealsense tag version: "$LIBREALSENSE_VERSION "but it is not available."
-  echo "This script uses patches from librealsense on the kernel source."
-  echo "Please upgrade librealsense before attempting to patch and build the kernel again."
+  echo "This script patches librealsense, the patches apply on the expected version."
+  echo "Please upgrade librealsense before attempting to install again."
   echo ""
   exit 1
 fi
 
-exit 1
+# Checkout version the last tested version of librealsense
+git checkout $LIBREALSENSE_VERSION
+
 # Install the dependencies
+cd $INSTALL_DIR
 sudo ./scripts/installDependencies.sh
 
 cd $LIBREALSENSE_DIRECTORY
+git checkout $LIBREALSENSE_VERSION
 echo "${green}Applying Device Bus Patch${reset}"
 # Some assumptions are made about how devices attach in the library.
 # The Jetson has some devices onboard (the ina3221x power monitor, camera module) 
