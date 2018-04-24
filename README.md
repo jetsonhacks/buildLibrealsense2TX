@@ -62,7 +62,7 @@ The install script does the following:
 <h3>CUDA</h3>
 There is added CUDA support for converting yuy2 images to RGB/BGR/RGBA/BGRA. The Cmake flag is USE_CUDA, e.g. -DUSE_CUDA=true
 
-Special thanks to Mehran Maghoumi (@Maghoumi) for the CUDA code which forms the basis for the conversion
+Special thanks to Mehran Maghoumi (@Maghoumi https://github.com/Maghoumi/culibrealsense) for the CUDA code which forms the basis for the conversion
 
 <h3>Tracking Module</h3>
 Some RealSense cameras have a tracking module. Here's some more info on that:
@@ -77,14 +77,15 @@ $ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
 
 <h2>Releases</h2>
 
-April, 2018
+<h4>April, 2018</h4>
 <strong>v0.8</strong>
 <li>Initial support for Jetson TX1</li>
 <li>Added CUDA support for yuy2->RGB/BGR/RGBA/BGRA</li>
 <li>L4T 28.2 (JetPack 3.2)</li>
 <li>librealsense 2.10.2</li></ul>
 
-April, 2018
+
+<h4>April, 2018</h4>
 <strong>v0.5 (Development)</strong>
 <ul>
 <li>Initial support for Jetson TX2</li>
