@@ -61,6 +61,8 @@ fi
 
 # Is librealsense on the device?
 LIBREALSENSE_DIRECTORY=${HOME}/librealsense
+LIBREALSENSE_VERSION=v2.10.4
+
 if [ ! -d "$LIBREALSENSE_DIRECTORY" ] ; then
    echo "The librealsense repository directory is not available"
    read -p "Would you like to git clone librealsense? (y/n) " answer
@@ -71,8 +73,8 @@ if [ ! -d "$LIBREALSENSE_DIRECTORY" ] ; then
          echo "${green}Cloning librealsense${reset}"
          git clone https://github.com/IntelRealSense/librealsense.git
          cd librealsense
-         # Checkout version v2.10.4 of librealsense, last tested version
-         git checkout v2.10.4
+         # Checkout version the last tested version of librealsense
+         git checkout $LIBREALSENSE_VERSION
      ;;
      * )
          echo "Kernel patch and build not started"   
@@ -83,7 +85,6 @@ fi
 
 # Is the version of librealsense current enough?
 cd $LIBREALSENSE_DIRECTORY
-LIBREALSENSE_VERSION=v2.10.4
 VERSION_TAG=$(git tag -l $LIBREALSENSE_VERSION)
 if [ ! $VERSION_TAG  ] ; then
    echo ""
