@@ -84,7 +84,7 @@ $ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
 <li>Initial support for Jetson TX1</li>
 <li>Added CUDA support for yuy2->RGB/BGR/RGBA/BGRA</li>
 <li>L4T 28.2 (JetPack 3.2)</li>
-<li>librealsense 2.10.2</li></ul>
+<li>librealsense 2.10.4</li></ul>
 
 
 <h4>April, 2018</h4>
