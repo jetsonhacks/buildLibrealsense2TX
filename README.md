@@ -17,15 +17,17 @@ In order to support Intel RealSense cameras with built in accelerometers and gyr
 
 Most developers will want to apply the needed patches, configure the kernel .config file to match their desired environment, and then build their kernel Image and modules. The scripts assumes that the source is in the usual place for the Jetson, i.e. /usr/src/kernel/kernel-4.4, though you may want to change it to match your needs. <strong>Note: </strong>You can examine buildPatchedKernel.sh for the general outline of building the kernel.
 
-The script scripts/applyKernelPatches.sh will patch the kernel modules and Image to support the librealsense2 cameras. 
+The script scripts/patchKernel.sh will patch the kernel modules and Image to support the librealsense2 cameras. 
 
-$ sudo ./scripts/applyKernelPatches.sh
+$ sudo ./scripts/patchKernel.sh
 
 The kernel configuration modifications are in the scripts/configureKernel.sh script.
 
 $ sudo ./scripts/configureKernel.sh
 
-This script modifies the Industrial I/O device modules as needed and then ensures that any dependecnies are met. See the script for more details.
+This script modifies the Industrial I/O device modules as needed and then ensures that any dependencies are met. The script also sets the local version to the local version of the current kernel. See the script for more details.
+
+<em><strong>Note: </strong>The configureKernel.sh script sets the local version of the kernel to be the current local version, ie -tegra on a stock kernel. If that is not your intention, modify configureKernel.sh appropriately.</em>
 
 <h3>A nasty little alternative</h3>
 
@@ -79,9 +81,14 @@ $ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
 
 <h2>Releases</h2>
 
+<h4>May, 2018</h4>
+<strong>v0.81</strong>
+<ul><li>Fix README.md directions</li>
+</ul>
+
 <h4>April, 2018</h4>
 <strong>v0.8</strong>
-<li>Initial support for Jetson TX1</li>
+<ul><li>Initial support for Jetson TX1</li>
 <li>Added CUDA support for yuy2->RGB/BGR/RGBA/BGRA</li>
 <li>L4T 28.2 (JetPack 3.2)</li>
 <li>librealsense 2.10.4</li></ul>
