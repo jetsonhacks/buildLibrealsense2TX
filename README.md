@@ -1,10 +1,10 @@
 # buildLibrealsense2TX
 Build librealsense 2.0 library on the NVIDIA Jetson TX Development kit. Jetson TX1 and Jetson TX2. Intel RealSense D400 series cameras.
 
-This is for version L4T 28.2 (JetPack 3.2)
-librealsense v2.10.4
+This is for version L4T 28.2 / L4T 28.2.1 (JetPack 3.2.1)
+librealsense v2.13.0
 
-April, 2018
+July, 2018
 
 In order for librealsense to work properly, the kernel image must be rebuilt and patches applied to the UVC module and some other support modules. Running installLibrealsense.sh alone will appear to make the camera mostly work but will be missing features such as frame metadata support ( https://github.com/IntelRealSense/librealsense/blob/master/doc/frame_metadata.md ).
 
@@ -57,16 +57,10 @@ The install script does the following:
 <ul>
 <li>Install dependencies</li>
 <li>Applies Jetson specific patches</li>
-<li>Adds CUDA support</li>
 <li>Sets up udev rules so the camera may be used in user space</li>
 <li>Builds librealsense, tools and demos</li>
 <li>Installs libraries and executables</li>
 </ul>
-
-<h3>CUDA</h3>
-There is added CUDA support for converting yuy2 images to RGB/BGR/RGBA/BGRA. The Cmake flag is USE_CUDA, e.g. -DUSE_CUDA=true
-
-Special thanks to Mehran Maghoumi (@Maghoumi https://github.com/Maghoumi/culibrealsense) for the CUDA code which forms the basis for the conversion
 
 <h3>Tracking Module</h3>
 Some RealSense cameras have a tracking module. Here's some more info on that:
@@ -80,6 +74,12 @@ In order to accomplish this add the driver's name *hid_sensor_custom* to `/etc/m
 $ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
 
 <h2>Releases</h2>
+<h4>July, 2018</h4>
+<strong>v0.9</strong>
+<ul><li>librealsense now has natic CUDA support (v2.13.0) </li>
+<li>librealsense v2.13.0 requires CMake 3.8+; Jetson has 3.5.1 so CMake is rebuilt</li>
+<li>L4T 28.2 / L4T 28.2.1 (JetPack 3.2.1)</li>
+<li>librealsense 2.13.0</li></ul>
 
 <h4>May, 2018</h4>
 <strong>v0.81</strong>
