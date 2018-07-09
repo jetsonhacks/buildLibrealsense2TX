@@ -13,9 +13,9 @@ apt-get update
 echo "${green}Adding dependencies, graphics libraries and tools${reset}"
 apt-get install libusb-1.0-0-dev pkg-config -y
 # This is for ccmake
-apt-get install cmake-curses-gui -y
 apt-get install build-essential -y
-apt-get install cmake-curses-gui -y
+# librealsense requires CMake 3.8; This cmake-curses-gui is for 3.5.1
+# apt-get install cmake-curses-gui -y
 
 
 # Graphics libraries are for the examples; not required for librealsense core library

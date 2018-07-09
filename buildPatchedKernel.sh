@@ -8,6 +8,10 @@ set -e
 
 CLEANUP=true
 
+LIBREALSENSE_DIRECTORY=${HOME}/librealsense
+LIBREALSENSE_VERSION=v2.13.0
+
+
 function usage
 {
     echo "usage: ./buildPatchedKernel.sh [[-n nocleanup ] | [-h]]"
@@ -38,13 +42,40 @@ source scripts/jetson_variables.sh
 echo "$JETSON_DESCRIPTION"
 #Print Jetpack version
 echo "Jetpack $JETSON_JETPACK [L4T $JETSON_L4T]"
+echo "Jetson $JETSON_BOARD Development Kit"
 
 # Check to make sure we're installing the correct kernel sources
-L4TTarget="28.2"
-if [ $JETSON_L4T != $L4TTarget ] ; then
-#   echo "Getting kernel sources"
-   # sudo ./scripts/getKernelSources.sh
-# else
+# Determine the correct kernel version
+# The KERNEL_BUILD_VERSION is the release tag for the JetsonHacks buildKernel repository
+KERNEL_BUILD_VERSION=master
+if [ $JETSON_BOARD == "TX2" ] ; then 
+L4TTarget="28.2.1"
+  # Test for 28.2.1 first
+  if [ $JETSON_L4T = "28.2.1" ] ; then
+     KERNEL_BUILD_VERSION=vL4T28.2.1
+  elif [ $JETSON_L4T = "28.2" ] ; then
+     KERNEL_BUILD_VERSION=vL4T28.2r3
+  else
+   echo ""
+   tput setaf 1
+   echo "==== L4T Kernel Version Mismatch! ============="
+   tput sgr0
+   echo ""
+   echo "This repository is for modifying the kernel for a L4T "$L4TTarget "system." 
+   echo "You are attempting to modify a L4T "$JETSON_L4T "system."
+   echo "The L4T releases must match!"
+   echo ""
+   echo "There may be versions in the tag/release sections that meet your needs"
+   echo ""
+   exit 1
+  fi 
+fi
+
+if [ $JETSON_BOARD == "TX1" ] ; then 
+ L4TTarget="28.2"
+ if [ $JETSON_L4T = "28.2" ] ; then
+     KERNEL_BUILD_VERSION=v1.0-L4T28.2
+  else
    echo ""
    tput setaf 1
    echo "==== L4T Kernel Version Mismatch! ============="
@@ -57,11 +88,22 @@ if [ $JETSON_L4T != $L4TTarget ] ; then
    echo "There may be versions in the tag/release sections that meet your needs"
    echo ""
    exit 1
+  fi
+fi
+
+# If we didn't find a correctly configured TX2 or TX1 exit, we don't know what to do
+if [ $KERNEL_BUILD_VERSION = "master" ] ; then
+   tput setaf 1
+   echo "==== L4T Kernel Version Mismatch! ============="
+   tput sgr0
+    echo "Currently this script works for the Jetson TX2 and Jetson TX1."
+   echo "This processor appears to be a Jetson $JETSON_BOARD, which does not have a corresponding script"
+   echo ""
+   echo "Exiting"
+   exit 1
 fi
 
 # Is librealsense on the device?
-LIBREALSENSE_DIRECTORY=${HOME}/librealsense
-LIBREALSENSE_VERSION=v2.10.4
 
 if [ ! -d "$LIBREALSENSE_DIRECTORY" ] ; then
    echo "The librealsense repository directory is not available"
@@ -107,12 +149,12 @@ if [ $JETSON_BOARD == "TX2" ] ; then
   git clone https://github.com/jetsonhacks/buildJetsonTX2Kernel.git
   KERNEL_BUILD_DIR=buildJetsonTX2Kernel
   cd $KERNEL_BUILD_DIR
-  git checkout vL4T28.2r3
+  git checkout $KERNEL_BUILD_VERSION
 elif [ $JETSON_BOARD == "TX1" ] ; then
     git clone https://github.com/jetsonhacks/buildJetsonTX1Kernel.git
     KERNEL_BUILD_DIR=buildJetsonTX1Kernel
     cd $KERNEL_BUILD_DIR
-    git checkout v1.0-L4T28.2
+    git checkout $KERNEL_BUILD_VERSION
   else 
     tput setaf 1
     echo "==== Build Issue! ============="

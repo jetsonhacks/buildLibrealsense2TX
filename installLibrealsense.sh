@@ -2,13 +2,44 @@
 # Builds the Intel Realsense library librealsense on a Jetson TX Development Kit
 # Copyright (c) 2016-18 Jetsonhacks 
 # MIT License
+
+# librealsense requires CMake 3.8+ to build; the repositories hold CMake 3.5.1
+# In this script, we build 3.11 but do not install it
+
+LIBREALSENSE_DIRECTORY=${HOME}/librealsense
+LIBREALSENSE_VERSION=v2.13.0
+INSTALL_DIR=$PWD
+
+
+BUILD_CMAKE=true
+
+function usage
+{
+    echo "usage: ./installLibrealsense.sh [[-c ] | [-h]]"
+    echo "-n | --no_cmake   Do not build CMake 3.11"
+    echo "-h | --help  This message"
+}
+
+# Iterate through command line inputs
+while [ "$1" != "" ]; do
+    case $1 in
+        -n | --no_cmake )      shift
+				BUILD_CMAKE=false
+                                ;;
+        -h | --help )           usage
+                                exit
+                                ;;
+        * )                     usage
+                                exit 1
+    esac
+    shift
+done
+
 red=`tput setaf 1`
 green=`tput setaf 2`
 reset=`tput sgr0`
 # e.g. echo "${red}The red tail hawk ${green}loves the green grass${reset}"
 
-LIBREALSENSE_DIRECTORY=${HOME}/librealsense
-LIBREALSENSE_VERSION=v2.10.4
 
 echo ""
 echo "Please make sure that no RealSense cameras are currently attached"
@@ -16,7 +47,6 @@ echo ""
 read -n 1 -s -r -p "Press any key to continue"
 echo ""
 
-INSTALL_DIR=$PWD
 if [ ! -d "$LIBREALSENSE_DIRECTORY" ] ; then
   # clone librealsense
   cd ${HOME}
@@ -48,27 +78,28 @@ git checkout $LIBREALSENSE_VERSION
 cd $INSTALL_DIR
 sudo ./scripts/installDependencies.sh
 
+# Do we need to install CMake?
+if [ "$BUILD_CMAKE" = true ] ; then
+  echo "Building CMake"
+  ./scripts/buildCMake.sh
+  CMAKE_BUILD_OK=$?
+  if [ $CMAKE_BUILD_OK -ne 0 ] ; then
+    echo "CMake build failure. Exiting"
+    exit 1
+  fi
+fi
+
 cd $LIBREALSENSE_DIRECTORY
 git checkout $LIBREALSENSE_VERSION
-echo "${green}Applying Device Bus Patch${reset}"
-# Some assumptions are made about how devices attach in the library.
-# The Jetson has some devices onboard (the ina3221x power monitor, camera module) 
-# that do not report on the USB bus as the library expects.
-# This patch is a work around to avoid spamming the console
-patch -p1 -i $INSTALL_DIR/patches/internalbus.patch
 
 echo "${green}Applying Model-Views Patch${reset}"
 # The render loop of the post processing does not yield; add a sleep
 patch -p1 -i $INSTALL_DIR/patches/model-views.patch
 
-echo "${green}Applying AVC Switch Patch${reset}"
-# The CMakeLists.txt references the -mavx2 switch, which is not available
-# on the Jetson. This patch simply comments it out
-patch -p1 -i $INSTALL_DIR/patches/avxSwitch.patch
+echo "${green}Applying Incomplete Frames Patch${reset}"
+# The Jetson tends to return incomplete frames at high frame rates; suppress error logging
+patch -p1 -i $INSTALL_DIR/patches/incomplete-frame.patch
 
-echo "${green}Applying CUDA Enhancement Patch${reset}"
-# Add CUDA code to translate uyvy to RGB/BGR/RGBA/BGRA
-patch -p1 -i $INSTALL_DIR/patches/cudaImage.patch
 
 echo "${green}Applying udev rules${reset}"
 # Copy over the udev rules so that camera can be run from user space
@@ -76,15 +107,37 @@ sudo cp config/99-realsense-libusb.rules /etc/udev/rules.d/
 sudo udevadm control --reload-rules && udevadm trigger
 
 # Now compile librealsense and install
-mkdir build && cd build
+mkdir build 
+cd build
 # Build examples, including graphical ones
 echo "${green}Configuring Make system${reset}"
+# Use the CMake version that we built, must be > 3.8
 # Build with CUDA (default), the CUDA flag is USE_CUDA, ie -DUSE_CUDA=true
-cmake ../ -DBUILD_EXAMPLES=true
+${HOME}/CMake/bin/cmake ../ -DBUILD_EXAMPLES=true -DBUILD_WITH_CUDA=true
 # The library will be installed in /usr/local/lib, header files in /usr/local/include
 # The demos, tutorials and tests will located in /usr/local/bin.
 echo "${green}Building librealsense, headers, tools and demos${reset}"
-make -j4
+
+NUM_CPU=$(nproc)
+time make -j$(($NUM_CPU - 1))
+if [ $? -eq 0 ] ; then
+  echo "librealsense make successful"
+else
+  # Try to make again; Sometimes there are issues with the build
+  # because of lack of resources or concurrency issues
+  echo "librealsense did not build " >&2
+  echo "Retrying ... "
+  # Single thread this time
+  time make 
+  if [ $? -eq 0 ] ; then
+    echo "librealsense make successful"
+  else
+    # Try to make again
+    echo "librealsense did not successfully build" >&2
+    echo "Please fix issues and retry build"
+    exit 1
+  fi
+fi
 echo "${green}Installing librealsense, headers, tools and demos${reset}"
 sudo make install
 echo "${green}Library Installed${reset}"
