@@ -132,7 +132,7 @@ else
 fi
 
 # Read opencv version
-pkg-config --exists opencv
+$(pkg-config --exists opencv)
 if [ $? == "0" ] ; then
     JETSON_OPENCV=$(pkg-config --modversion opencv)
 else
