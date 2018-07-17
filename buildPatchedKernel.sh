@@ -3,8 +3,6 @@
 # Copyright (c) 2016-18 Jetsonhacks 
 # MIT License
 
-# Error out if something goes wrong
-set -e
 
 CLEANUP=true
 
@@ -43,6 +41,9 @@ echo "$JETSON_DESCRIPTION"
 #Print Jetpack version
 echo "Jetpack $JETSON_JETPACK [L4T $JETSON_L4T]"
 echo "Jetson $JETSON_BOARD Development Kit"
+
+# Error out if something goes wrong
+set -e
 
 # Check to make sure we're installing the correct kernel sources
 # Determine the correct kernel version
