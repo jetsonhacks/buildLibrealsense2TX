@@ -76,7 +76,7 @@ $ echo 'hid_sensor_custom' | sudo tee -a /etc/modules`
 <h2>Releases</h2>
 <h4>July, 2018</h4>
 <strong>v0.9</strong>
-<ul><li>librealsense now has natic CUDA support (v2.13.0) </li>
+<ul><li>librealsense now has native CUDA support (v2.13.0) </li>
 <li>librealsense v2.13.0 requires CMake 3.8+; Jetson has 3.5.1 so CMake is rebuilt</li>
 <li>L4T 28.2 / L4T 28.2.1 (JetPack 3.2.1)</li>
 <li>librealsense 2.13.0</li></ul>
