@@ -34,14 +34,14 @@ This script modifies the Industrial I/O device modules as needed and then ensure
 If you live a little more dangerously, and you are not concerned with building/maintaining your own kernel, there is a script which downloads the kernel source, patches it, builds a new kernel and installs it. To be clear, this is not good development methodology. 
 
 
-$ ./buildPatchedKernelTX.sh
+$ ./buildPatchedKernel.sh
 
 
 By default, the kernel sources will be erased from the disk after the kernel has been compiled and installed. You will need >3GB of disk space to build the kernel in this manner. Please note that you should do this on a freshly flashed system. In the case when something goes wrong, it may make the system fail and become unresponsive; the only way to recover may be to use JetPack to reflash.
 
 The script has an option to keep the kernel sources and build information:
 
-$ ./buildPatchedKernelTX.sh --nocleanup
+$ ./buildPatchedKernel.sh --nocleanup
 
 which may prove useful for debugging purposes.
 
